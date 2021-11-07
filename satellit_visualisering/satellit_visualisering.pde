@@ -5,67 +5,78 @@ float r = 200;
 
 PImage earth;
 PShape globe;
+PShape sat1;
+
+JSONObject j;
+JSONArray positionsJson;
+JSONObject pos1;
+JSONObject pos2;
+float sat1Lon;
+float sat1Lat;
+float sat2Lon;
+float sat2Lat;
+
+float rotation = 0;
+
+PVector yAxis = new PVector(0, 1, 0);
+PVector zAxis = new PVector(0, 0, 1);
 
 void setup() {
+ frameRate(60);
+ 
+ j = loadJSONObject("https://api.n2yo.com/rest/v1/satellite/positions/25544/41.702/-76.014/0/2/&apiKey=UJXN78-YE3DB8-NX877Y-4SW0");
+ positionsJson = j.getJSONArray("positions");
+ pos1 = positionsJson.getJSONObject(0);
+ pos2 = positionsJson.getJSONObject(1);
+ sat1Lon = pos1.getFloat("satlongitude");
+ sat1Lat = pos1.getFloat("satlatitude");
+ sat2Lon = pos2.getFloat("satlongitude");
+ sat2Lat = pos2.getFloat("satlatitude");
+
  size(600, 600, P3D);
  earth = loadImage("earth.jpg");
-  // table = loadTable("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_day.csv", "header");
- table = loadTable("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv", "header");
-
+ 
  noStroke();
  globe = createShape(SPHERE, r);
  globe.setTexture(earth);
+ 
+ sat1 = createShape(SPHERE, 5);
 }
 
 void draw() {
  background(51);
+ pushMatrix();
  translate(width*0.5, height*0.5);
  rotateY(angle);
- angle += 0.05;
+ angle += 0.002;
 
- lights();
+ ambientLight(255, 255, 255);
  fill(200);
  noStroke();
-  //sphere(r);
  shape(globe);
+ popMatrix();
+ 
+  float theta = radians(sat1Lat);
 
- for (TableRow row : table.rows()) {
-  float lat = row.getFloat("latitude");
-  float lon = row.getFloat("longitude");
-  float mag = row.getFloat("mag");
+  float phi = radians(sat1Lon) + PI;
 
-    // original version
-    // float theta = radians(lat) + PI/2;
-
-    // fix: no + PI/2 needed, since latitude is between -180 and 180 deg
-  float theta = radians(lat);
-
-  float phi = radians(lon) + PI;
-
-    // original version
-    // float x = r * sin(theta) * cos(phi);
-    // float y = -r * sin(theta) * sin(phi);
-    // float z = r * cos(theta);
-
-    // fix: in OpenGL, y & z axes are flipped from math notation of spherical coordinates
   float x = r * cos(theta) * cos(phi);
   float y = -r * sin(theta);
   float z = -r * cos(theta) * sin(phi);
 
   PVector pos = new PVector(x, y, z);
-
-  float h = pow(10, mag);
-  float maxh = pow(10, 7);
-  h = map(h, 0, maxh, 10, 100);
-  PVector xaxis = new PVector(1, 0, 0);
-  float angleb = PVector.angleBetween(xaxis, pos);
-  PVector raxis = xaxis.cross(pos);
+  
+  rotation += 0.008;
 
   pushMatrix();
-  translate(x, y, z);
-  rotate(angleb, raxis.x, raxis.y, raxis.z);
+  translate(width*0.5, height*0.5);
+  //translate(pos.x, pos.y, pos.z);
+  //translate(0, 0, 255);
+  //rotate(angle, yAxis.x, yAxis.y, yAxis.z);
   fill(255);
-  box(h, 5, 5);
+  rotateZ(PI/4);
+  rotateY(rotation);
+  translate(pos.x + 30, pos.y + 30, pos.z + 30);
+  shape(sat1);
   popMatrix();
-  }
 }
